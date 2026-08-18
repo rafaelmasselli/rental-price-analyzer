@@ -16,14 +16,9 @@ export interface PlaywrightPageFetcherOptions {
   headless?: boolean;
   navigationTimeoutMs?: number;
   userAgent?: string;
-  /** Reuse an already installed Chrome/Chromium instead of Playwright's own. */
   executablePath?: string;
 }
 
-/**
- * Browser plumbing shared by the rental scrapers: stealth launch, one throwaway
- * context per request, randomized delays, exponential backoff on failure.
- */
 export class PlaywrightPageFetcher {
   private static readonly DEFAULT_DELAY: FetcherDelayRange = {
     minMs: 1200,

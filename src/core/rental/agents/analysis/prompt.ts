@@ -1,9 +1,7 @@
 import { ChatPromptTemplate } from "@langchain/core/prompts";
+import type { PromptStyle } from "../../../models/index.js";
 
-export const rentalAnalysisPrompt = ChatPromptTemplate.fromMessages([
-  [
-    "system",
-    `## Role
+const SYSTEM_BASE = `## Role
 You advise a tenant looking for a long-term rental in Brazil. Every listing arrives
 already priced against neighbourhood comparables and enriched with its own history.
 
@@ -14,8 +12,8 @@ A listing with a cheap rent and an expensive condo fee is an expensive listing.
 ## Criteria (in priority order)
 1. **Value against the local benchmark** — rating.deltaPercent below zero means it rents
    below comparable units nearby. Weigh how the benchmark was obtained:
-   rating.benchmark.scope 'bairro_quartos_tipo' with a large sampleSize is solid evidence;
-   'cidade' or 'llm_estimate' is a weak signal and deserves a smaller bonus.
+   rating.benchmark.scope 'bairro_quartos_tipo_area' with a large sampleSize is solid
+   evidence; 'cidade' or 'llm_estimate' is a weak signal and deserves a smaller bonus.
 2. **Risk signals** — every entry in rating.warnings lowers the score. A missing condo fee
    is the most dangerous one, because the real monthly cost is then unknown.
    A price far below the local median is a red flag, not an opportunity.
@@ -32,10 +30,26 @@ A listing with a cheap rent and an expensive condo fee is an expensive listing.
 - recommendation: 2-4 sentences in Portuguese — which to visit first, what to negotiate,
   and what to confirm before signing (condo fee, IPTU, fiador/seguro-fiança).
 
-Respond strictly in valid JSON matching the schema. No prose outside the JSON.`,
-  ],
-  [
-    "human",
-    "Search intent: {query}\nVariations searched: {variations}\n\nListings (JSON):\n{listings}",
-  ],
-]);
+Respond strictly in valid JSON matching the schema. No prose outside the JSON.`;
+
+const LITERAL_ADDENDUM = `
+
+## Mechanical rules — follow exactly
+- Every listingId you output must be copied character by character from the input.
+  Never invent an id, never abbreviate one. An id that is not in the input is a failure.
+- topPicks holds at most 5 entries, ordered best first, with no repeats.
+- score is a number between 0 and 10. Never a string, never a range.
+- significantDropListingIds must be [] when no listing has changePercent <= -3.
+- Write the recommendation in Portuguese, referring to properties by their title or
+  neighbourhood — not by raw id, which means nothing to the reader.
+- Output only the JSON object. No explanation, no markdown fences.`;
+
+const HUMAN =
+  "Search intent: {query}\nVariations searched: {variations}\n\nListings (JSON):\n{listings}";
+
+export function buildRentalAnalysisPrompt(style: PromptStyle) {
+  return ChatPromptTemplate.fromMessages([
+    ["system", style === "literal" ? SYSTEM_BASE + LITERAL_ADDENDUM : SYSTEM_BASE],
+    ["human", HUMAN],
+  ]);
+}

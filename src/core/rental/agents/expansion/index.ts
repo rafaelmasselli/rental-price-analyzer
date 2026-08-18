@@ -4,17 +4,21 @@ import {
   expansionSchema,
   type ExpansionSchemaOutput,
 } from "../../../agents/expansion/schema.js";
-import { rentalExpansionPrompt } from "./prompt.js";
+import { buildRentalExpansionPrompt } from "./prompt.js";
 
 export interface RentalQueryExpansionOptions {
   count: number;
 }
 
 export class RentalQueryExpansionAgent implements IRentalAgent {
+  private readonly prompt: ReturnType<typeof buildRentalExpansionPrompt>;
+
   constructor(
     private readonly llmProvider: ILLMProvider,
     private readonly options: RentalQueryExpansionOptions,
-  ) {}
+  ) {
+    this.prompt = buildRentalExpansionPrompt(llmProvider.getProfile().promptStyle);
+  }
 
   async run(state: RentalGraphState): Promise<Partial<RentalGraphState>> {
     if (!state.query?.trim()) {
@@ -37,7 +41,7 @@ export class RentalQueryExpansionAgent implements IRentalAgent {
       `\n[RentalQueryExpansionAgent] Expanding "${state.query}" into ${this.options.count} variations...`,
     );
 
-    const chain = rentalExpansionPrompt.pipe(
+    const chain = this.prompt.pipe(
       this.llmProvider.getModel().withStructuredOutput(expansionSchema),
     );
 

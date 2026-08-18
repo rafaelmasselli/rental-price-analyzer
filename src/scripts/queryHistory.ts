@@ -1,5 +1,5 @@
 import { CredentialsLoader } from "../config/index.js";
-import { VertexEmbeddingsProvider } from "../infra/llm/index.js";
+import { LlmFactory } from "../infra/llm/index.js";
 import {
   HistoryQueryService,
   type HistoryQueryFilters,
@@ -104,11 +104,7 @@ async function main(): Promise<void> {
   const credentials = await new CredentialsLoader().load();
 
   const embeddings = filters.similarTo
-    ? new VertexEmbeddingsProvider({
-        serviceAccount: credentials.serviceAccount,
-        location: credentials.location,
-        model: credentials.embeddingModel,
-      })
+    ? new LlmFactory(credentials).createEmbeddings()
     : null;
 
   const service = new HistoryQueryService(

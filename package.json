@@ -11,20 +11,23 @@
     "query": "tsx src/scripts/queryHistory.ts",
     "analyze": "tsx src/scripts/analyzeHistory.ts",
     "chat": "tsx src/scripts/chat.ts",
-    "rent": "tsx src/rentals.ts"
+    "rent": "tsx src/rentals.ts",
+    "models": "tsx src/scripts/models.ts"
   },
   "dependencies": {
     "@langchain/community": "^0.3.0",
     "@langchain/core": "^0.3.0",
     "@langchain/google-vertexai": "^0.2.0",
     "@langchain/langgraph": "^0.2.0",
+    "@langchain/ollama": "^0.2.4",
     "better-sqlite3": "^11.3.0",
     "cheerio": "^1.0.0",
     "langchain": "^0.3.0",
     "playwright": "^1.45.0",
     "playwright-extra": "^4.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "zod-to-json-schema": "^3.23.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

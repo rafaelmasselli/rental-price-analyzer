@@ -19,6 +19,8 @@ export interface IRentalHistoryStore {
   /** Comparables observed in the last `windowDays` days, one row per listing. */
   loadComps(windowDays: number): Promise<CompRecord[]>;
   appendEntries(entries: RentalHistoryEntry[]): Promise<void>;
+  /** Refuses to mix vectors from different embedding models. */
+  assertEmbeddingCompatible(model: string, dimensions: number): void;
   upsertEmbedding(listingId: string, embedding: number[]): Promise<void>;
   findSimilar(
     embedding: number[],

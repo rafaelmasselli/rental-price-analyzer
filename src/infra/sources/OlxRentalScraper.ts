@@ -47,11 +47,6 @@ interface NextDataAd {
   properties?: NextDataProperty[];
 }
 
-/**
- * Scrapes the OLX real-estate rental vertical. Unlike the marketplace scraper,
- * the useful signal here is not the title but the structured `properties`
- * array OLX ships inside __NEXT_DATA__ (area, rooms, condo fee, IPTU).
- */
 export class OlxRentalScraper implements IRentalListingSource {
   private static readonly BASE_URL = "https://www.olx.com.br";
   private static readonly RENTAL_PATH = "imoveis/aluguel";
@@ -155,8 +150,7 @@ export class OlxRentalScraper implements IRentalListingSource {
     const fromCards = this.fromAdCards($);
     if (fromCards.length > 0) return fromCards;
 
-    // Older OLX frontends shipped the results as JSON instead of markup.
-    return this.fromNextData($);
+      return this.fromNextData($);
   }
 
   private fromNextData($: CheerioAPI): RentalListing[] {
@@ -189,12 +183,6 @@ export class OlxRentalScraper implements IRentalListingSource {
       .filter((listing): listing is RentalListing => listing !== null);
   }
 
-  /**
-   * Current OLX real-estate markup. Every field this pipeline needs is already
-   * in the card: area, bedrooms, bathrooms and parking as aria-labels, and — the
-   * part that makes the whole rental comparison possible — the condo fee and the
-   * IPTU printed next to the rent.
-   */
   private fromAdCards($: CheerioAPI): RentalListing[] {
     const results: RentalListing[] = [];
 
@@ -306,11 +294,6 @@ export class OlxRentalScraper implements IRentalListingSource {
     return [parts[0], parts[1]];
   }
 
-  /**
-   * Grouped cards ("Ver 8 opções") render with href="#", so the id has to come
-   * from somewhere else. The photo id is stable across runs and, unlike a hash
-   * of the price, survives the price changes this pipeline exists to track.
-   */
   private resolveListingId(
     href: string,
     cardHtml: string,

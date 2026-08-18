@@ -99,11 +99,6 @@ export class SqliteRentalHistoryStore implements IRentalHistoryStore {
     return map;
   }
 
-  /**
-   * One row per listing (its most recent observation) inside the window.
-   * Older snapshots of the same unit would bias the median toward whatever
-   * was scraped most often.
-   */
   async loadComps(windowDays: number): Promise<CompRecord[]> {
     this.assertReady();
     const cutoff = new Date(
@@ -225,6 +220,52 @@ export class SqliteRentalHistoryStore implements IRentalHistoryStore {
     tx(entries);
   }
 
+  assertEmbeddingCompatible(model: string, dimensions: number): void {
+    this.assertReady();
+    const storedDims = this.readMeta("embedding_dims");
+    const storedModel = this.readMeta("embedding_model");
+
+    if (storedDims === null) {
+      this.writeMeta("embedding_dims", String(dimensions));
+      this.writeMeta("embedding_model", model);
+      return;
+    }
+
+    if (Number(storedDims) !== dimensions) {
+      throw new Error(
+        `This history was built with ${storedModel} (${storedDims} dims) but the ` +
+          `configured embedding model is ${model} (${dimensions} dims). Mixing them ` +
+          `breaks semantic search silently. Point rentalDbPath at a new file, or ` +
+          `delete the existing one to re-embed from scratch.`,
+      );
+    }
+
+    if (storedModel !== model) {
+      console.log(
+        `[SqliteRentalHistoryStore] WARNING: history was embedded with ${storedModel}, ` +
+          `now writing ${model}. Same dimensions, but the vector spaces differ — ` +
+          `similarity across the two will be meaningless.`,
+      );
+      this.writeMeta("embedding_model", model);
+    }
+  }
+
+  private readMeta(key: string): string | null {
+    const row = this.db!
+      .prepare(`SELECT value FROM meta WHERE key = ?`)
+      .get(key) as { value: string } | undefined;
+    return row?.value ?? null;
+  }
+
+  private writeMeta(key: string, value: string): void {
+    this.db!
+      .prepare(
+        `INSERT INTO meta (key, value) VALUES (?, ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+      )
+      .run(key, value);
+  }
+
   async upsertEmbedding(listingId: string, embedding: number[]): Promise<void> {
     this.assertReady();
     const buffer = this.codec.encode(embedding);
@@ -293,6 +334,11 @@ export class SqliteRentalHistoryStore implements IRentalHistoryStore {
 
   private applySchema(): void {
     this.db!.exec(`
+      CREATE TABLE IF NOT EXISTS meta (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS rental_listings (
         listing_id TEXT PRIMARY KEY,
         source TEXT NOT NULL,

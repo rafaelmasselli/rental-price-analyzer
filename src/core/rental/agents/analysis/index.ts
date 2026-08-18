@@ -6,20 +6,20 @@ import {
   type RentalListingWithDelta,
   type RentalTopPick,
 } from "../../../../shared/models/index.js";
-import { rentalAnalysisPrompt } from "./prompt.js";
+import { buildRentalAnalysisPrompt } from "./prompt.js";
 import {
   rentalAnalysisSchema,
   type RentalAnalysisOutput,
 } from "./schema.js";
 
-/**
- * Ranks the batch. Market statistics are computed here rather than asked from
- * the model — arithmetic is not what an LLM is for.
- */
 export class RentalAnalysisAgent implements IRentalAgent {
   private static readonly DROP_THRESHOLD = -3;
 
-  constructor(private readonly llmProvider: ILLMProvider) {}
+  private readonly prompt: ReturnType<typeof buildRentalAnalysisPrompt>;
+
+  constructor(private readonly llmProvider: ILLMProvider) {
+    this.prompt = buildRentalAnalysisPrompt(llmProvider.getProfile().promptStyle);
+  }
 
   async run(state: RentalGraphState): Promise<Partial<RentalGraphState>> {
     if (state.listingsWithHistory.length === 0) {
@@ -30,7 +30,7 @@ export class RentalAnalysisAgent implements IRentalAgent {
       `\n[RentalAnalysisAgent] Analyzing ${state.listingsWithHistory.length} rentals with Gemini...`,
     );
 
-    const chain = rentalAnalysisPrompt.pipe(
+    const chain = this.prompt.pipe(
       this.llmProvider.getModel().withStructuredOutput(rentalAnalysisSchema),
     );
 

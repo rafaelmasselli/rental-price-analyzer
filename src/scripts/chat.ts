@@ -5,10 +5,7 @@ import {
   createHistoryTools,
   PriceChatService,
 } from "../core/services/index.js";
-import {
-  GeminiProvider,
-  VertexEmbeddingsProvider,
-} from "../infra/llm/index.js";
+import { LlmFactory } from "../infra/llm/index.js";
 import { HistoryQueryService } from "../infra/storage/index.js";
 
 const COMMANDS = {
@@ -48,18 +45,9 @@ Faça perguntas em linguagem natural. O assistente decide quais ferramentas usar
 async function main(): Promise<void> {
   const credentials = await new CredentialsLoader().load();
 
-  const llmProvider = new GeminiProvider({
-    serviceAccount: credentials.serviceAccount,
-    location: credentials.location,
-    model: credentials.model,
-    temperature: 0.4,
-  });
-
-  const embeddings = new VertexEmbeddingsProvider({
-    serviceAccount: credentials.serviceAccount,
-    location: credentials.location,
-    model: credentials.embeddingModel,
-  });
+  const factory = new LlmFactory(credentials);
+  const llmProvider = factory.createLlm(0.4);
+  const embeddings = factory.createEmbeddings();
 
   const queryService = new HistoryQueryService(
     credentials.historyDbPath,

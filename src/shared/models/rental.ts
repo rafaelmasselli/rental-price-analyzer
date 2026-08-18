@@ -58,11 +58,7 @@ export const RentBenchmarkSchema = z.object({
 
 export const RentalRatingSchema = z.object({
   classification: z.enum(["good_deal", "fair", "overpriced"]),
-  /**
-   * Priced so far below comparable units that the discount is more likely to be
-   * missing information than an opportunity. Kept out of `classification` on
-   * purpose: it is not a fourth price band, it is a caveat on the whole reading.
-   */
+  /** Barato a ponto de indicar informação faltando, não oportunidade. */
   suspicious: z.boolean(),
   fairMonthlyTotalBRL: z.number(),
   deltaPercent: z.number(),
@@ -72,11 +68,6 @@ export const RentalRatingSchema = z.object({
   reasoning: z.string(),
 });
 
-/**
- * A rental listing. `rentBRL` is the advertised base rent; `monthlyTotalBRL` is
- * what the tenant actually pays every month (rent + condo fee + monthly IPTU).
- * Every comparison in this pipeline uses `monthlyTotalBRL`, never `rentBRL`.
- */
 export const RentalListingSchema = z.object({
   listingId: z.string(),
   source: RentalSourceSchema,

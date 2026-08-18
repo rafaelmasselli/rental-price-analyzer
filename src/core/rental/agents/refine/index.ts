@@ -16,12 +16,6 @@ export interface RentalRefineOptions {
   priceTolerancePercent?: number;
 }
 
-/**
- * Runs after normalization, when listings finally have area/bairro/quartos:
- * collapses the same unit re-advertised under different ids, then drops the
- * R$/m2 outliers within each neighbourhood (never against a city-wide median,
- * which would flag every cheap neighbourhood as a bargain).
- */
 export class RentalRefineAgent implements IRentalAgent {
   private static readonly DEFAULT_MIN_GROUP_SIZE = 5;
   private static readonly DEFAULT_AREA_TOLERANCE = 3;
@@ -46,11 +40,6 @@ export class RentalRefineAgent implements IRentalAgent {
     return { rawListings: clean };
   }
 
-  /**
-   * The same apartment gets posted by several agencies with different ids.
-   * Two ads are the same unit when they share neighbourhood and bedroom count
-   * and their area and monthly total both land inside a tight tolerance.
-   */
   private dedupeSameUnit(listings: RentalListing[]): RentalListing[] {
     const areaTolerance =
       (this.options.areaTolerancePercent ??
@@ -71,7 +60,6 @@ export class RentalRefineAgent implements IRentalAgent {
         continue;
       }
 
-      // Keep whichever ad describes the unit better.
       if (this.richness(candidate) > this.richness(kept[twinIndex])) {
         kept[twinIndex] = candidate;
       }

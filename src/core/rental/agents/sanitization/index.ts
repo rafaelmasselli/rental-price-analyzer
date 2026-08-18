@@ -17,10 +17,6 @@ interface FilterStats {
   duplicateId: number;
 }
 
-/**
- * Cheap pass that runs before the LLM: everything here is a regex or a number
- * comparison, and every listing it drops is one the LLM does not have to read.
- */
 export class RentalSanitizationAgent implements IRentalAgent {
   constructor(private readonly options: RentalSanitizationOptions) {}
 

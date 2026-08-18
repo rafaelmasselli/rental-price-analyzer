@@ -13,7 +13,7 @@ import {
   type RentalListing,
   type RentalRating,
 } from "../../../../shared/models/index.js";
-import { rentEstimatePrompt } from "./prompt.js";
+import { buildRentEstimatePrompt } from "./prompt.js";
 import { rentEstimateSchema, type RentEstimateOutput } from "./schema.js";
 
 export interface RentalBenchmarkOptions {
@@ -35,12 +35,6 @@ interface RunSummary {
   unrated: number;
 }
 
-/**
- * The rental counterpart of the PC-parts rating agent. Where that one summed
- * component prices fetched from Mercado Livre, this one derives a fair monthly
- * cost from comparables — median R$/m2 of similar units nearby — and falls back
- * to an LLM appraisal only when the sample is too thin to trust.
- */
 export class RentalBenchmarkAgent implements IRentalAgent {
   private static readonly DEFAULT_THRESHOLD = 12;
   private static readonly DEFAULT_SUSPICIOUS_DISCOUNT = -40;
@@ -48,12 +42,16 @@ export class RentalBenchmarkAgent implements IRentalAgent {
   /** Condo fee above this share of the rent distorts the real cost. */
   private static readonly HIGH_CONDO_SHARE = 0.4;
 
+  private readonly prompt: ReturnType<typeof buildRentEstimatePrompt>;
+
   constructor(
     private readonly benchmark: IRentBenchmarkLookup,
     private readonly store: IRentalHistoryStore,
     private readonly llmProvider: ILLMProvider,
     private readonly options: RentalBenchmarkOptions,
-  ) {}
+  ) {
+    this.prompt = buildRentEstimatePrompt(llmProvider.getProfile().promptStyle);
+  }
 
   async run(state: RentalGraphState): Promise<Partial<RentalGraphState>> {
     if (state.rawListings.length === 0) return { rawListings: [] };
@@ -109,10 +107,6 @@ export class RentalBenchmarkAgent implements IRentalAgent {
     return { rawListings: rated };
   }
 
-  /**
-   * Comparables come from the accumulated history AND from the current batch —
-   * without the batch, the very first run would have nothing to compare against.
-   */
   private async primeComparables(listings: RentalListing[]): Promise<void> {
     await this.store.ensureInitialized();
     const historical = await this.store.loadComps(this.options.compWindowDays);
@@ -156,12 +150,12 @@ export class RentalBenchmarkAgent implements IRentalAgent {
     );
 
     const batchSize =
-      this.options.batchSize ?? RentalBenchmarkAgent.DEFAULT_BATCH_SIZE;
+      this.options.batchSize ?? this.llmProvider.getProfile().batchSize;
 
     for (let i = 0; i < listings.length; i += batchSize) {
       const batch = listings.slice(i, i + batchSize);
       try {
-        const chain = rentEstimatePrompt.pipe(
+        const chain = this.prompt.pipe(
           this.llmProvider.getModel().withStructuredOutput(rentEstimateSchema),
         );
         const response = (await chain.invoke({

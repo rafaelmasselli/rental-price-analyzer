@@ -1,9 +1,7 @@
 import { ChatPromptTemplate } from "@langchain/core/prompts";
+import type { PromptStyle } from "../../../models/index.js";
 
-export const rentEstimatePrompt = ChatPromptTemplate.fromMessages([
-  [
-    "system",
-    `## Role
+const SYSTEM_BASE = `## Role
 You are a Brazilian residential rental appraiser.
 
 ## Context
@@ -28,10 +26,26 @@ that same neighbourhood today.
 - Set confidence 'low' whenever the neighbourhood is unfamiliar or the area is unknown.
 
 ## Output
-Strictly valid JSON matching the schema. One entry per input listing.`,
-  ],
-  [
-    "human",
-    "Search intent: {query}\n\nListings needing an estimate (JSON):\n{listings}",
-  ],
-]);
+Strictly valid JSON matching the schema. One entry per input listing.`;
+
+const LITERAL_ADDENDUM = `
+
+## Mechanical rules — follow exactly
+- Return EXACTLY one entry per input listing, copying each listingId character by character.
+- fairMonthlyTotalBRL is a plain number in reais, with no currency symbol and no thousands
+  separator. Example: 4500, never "R$ 4.500" and never 4.500.
+- confidence must be exactly one of: low, medium, high.
+- If you do not actually know this neighbourhood's rental market, set confidence 'low' and
+  anchor your estimate near the listing's own monthlyTotalBRL rather than guessing a number
+  from an unfamiliar city. A confident wrong number is worse than an honest 'low'.
+- Output only the JSON object. No explanation, no markdown fences.`;
+
+const HUMAN =
+  "Search intent: {query}\n\nListings needing an estimate (JSON):\n{listings}";
+
+export function buildRentEstimatePrompt(style: PromptStyle) {
+  return ChatPromptTemplate.fromMessages([
+    ["system", style === "literal" ? SYSTEM_BASE + LITERAL_ADDENDUM : SYSTEM_BASE],
+    ["human", HUMAN],
+  ]);
+}

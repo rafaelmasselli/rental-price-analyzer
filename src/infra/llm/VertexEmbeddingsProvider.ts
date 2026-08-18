@@ -1,5 +1,8 @@
 import { VertexAIEmbeddings } from "@langchain/google-vertexai";
-import type { IEmbeddingProvider } from "../../core/ports/index.js";
+import type {
+  EmbeddingDescriptor,
+  IEmbeddingProvider,
+} from "../../core/ports/index.js";
 import type { ServiceAccountCredentials } from "../../config/index.js";
 
 export interface VertexEmbeddingsProviderOptions {
@@ -10,8 +13,10 @@ export interface VertexEmbeddingsProviderOptions {
 
 export class VertexEmbeddingsProvider implements IEmbeddingProvider {
   private readonly embeddings: VertexAIEmbeddings;
+  private readonly model: string;
 
   constructor(options: VertexEmbeddingsProviderOptions) {
+    this.model = options.model;
     this.embeddings = new VertexAIEmbeddings({
       model: options.model,
       location: options.location,
@@ -23,6 +28,10 @@ export class VertexEmbeddingsProvider implements IEmbeddingProvider {
         },
       },
     });
+  }
+
+  describe(): EmbeddingDescriptor {
+    return { backend: "vertex", model: this.model };
   }
 
   async embedQuery(text: string): Promise<number[]> {

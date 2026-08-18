@@ -5,7 +5,7 @@ import {
   type RentalGraphState,
   type RentalListing,
 } from "../../../../shared/models/index.js";
-import { rentalNormalizationPrompt } from "./prompt.js";
+import { buildRentalNormalizationPrompt } from "./prompt.js";
 import {
   rentalNormalizationSchema,
   type RentalNormalizationOutput,
@@ -18,26 +18,23 @@ export interface RentalNormalizationOptions {
   maxAttempts?: number;
 }
 
-/**
- * Fills the attribute gaps the portal left open and drops listings that are not
- * long-term rentals. Portal data always wins over LLM inference: the model only
- * gets to fill nulls.
- */
 export class RentalNormalizationAgent implements IRentalAgent {
-  private static readonly DEFAULT_BATCH_SIZE = 20;
   private static readonly DEFAULT_MAX_ATTEMPTS = 3;
   private static readonly INITIAL_BACKOFF_MS = 2000;
 
   private readonly batchSize: number;
   private readonly maxAttempts: number;
+  private readonly prompt: ReturnType<typeof buildRentalNormalizationPrompt>;
 
   constructor(
     private readonly llmProvider: ILLMProvider,
     options: RentalNormalizationOptions = {},
   ) {
-    this.batchSize = options.batchSize ?? RentalNormalizationAgent.DEFAULT_BATCH_SIZE;
+    const profile = llmProvider.getProfile();
+    this.batchSize = options.batchSize ?? profile.batchSize;
     this.maxAttempts =
       options.maxAttempts ?? RentalNormalizationAgent.DEFAULT_MAX_ATTEMPTS;
+    this.prompt = buildRentalNormalizationPrompt(profile.promptStyle);
   }
 
   async run(state: RentalGraphState): Promise<Partial<RentalGraphState>> {
@@ -151,7 +148,7 @@ export class RentalNormalizationAgent implements IRentalAgent {
     state: RentalGraphState,
     batch: RentalListing[],
   ): Promise<Map<string, Normalized>> {
-    const chain = rentalNormalizationPrompt.pipe(
+    const chain = this.prompt.pipe(
       this.llmProvider.getModel().withStructuredOutput(rentalNormalizationSchema),
     );
 

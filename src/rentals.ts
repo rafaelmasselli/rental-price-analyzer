@@ -10,10 +10,7 @@ import {
   RentalSanitizationAgent,
   RentalSearchAgent,
 } from "./core/rental/index.js";
-import {
-  GeminiProvider,
-  VertexEmbeddingsProvider,
-} from "./infra/llm/index.js";
+import { LlmFactory } from "./infra/llm/index.js";
 import { NeighborhoodBenchmark } from "./infra/pricing/index.js";
 import { OlxRentalScraper } from "./infra/sources/index.js";
 import { SqliteRentalHistoryStore } from "./infra/storage/index.js";
@@ -61,18 +58,17 @@ async function bootstrap(): Promise<void> {
   const credentials = await new CredentialsLoader().load();
   const { query, manualVariations, region } = parseInput();
 
-  const llmProvider = new GeminiProvider({
-    serviceAccount: credentials.serviceAccount,
-    location: credentials.location,
-    model: credentials.model,
-    temperature: credentials.temperature,
-  });
+  const factory = new LlmFactory(credentials);
+  const llmProvider = factory.createLlm();
+  const embeddingsProvider = factory.createEmbeddings();
+  const profile = llmProvider.getProfile();
 
-  const embeddingsProvider = new VertexEmbeddingsProvider({
-    serviceAccount: credentials.serviceAccount,
-    location: credentials.location,
-    model: credentials.embeddingModel,
-  });
+  console.log(
+    `[models] LLM: ${profile.backend}/${profile.id} · prompts ${profile.promptStyle} · lote ${profile.batchSize}`,
+  );
+  console.log(
+    `[models] Embeddings: ${embeddingsProvider.describe().backend}/${embeddingsProvider.describe().model}`,
+  );
 
   const listingSource = new OlxRentalScraper({
     region: region ?? credentials.olxRentalRegion,

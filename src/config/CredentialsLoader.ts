@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import type { LlmBackend } from "../core/models/index.js";
 
 export interface ServiceAccountCredentials {
   type: string;
@@ -16,7 +17,14 @@ export interface ServiceAccountCredentials {
 }
 
 export interface AiCredentials {
-  serviceAccount: ServiceAccountCredentials;
+  /** null when nothing in the run talks to Vertex. */
+  serviceAccount: ServiceAccountCredentials | null;
+  llmBackend: LlmBackend;
+  embeddingBackend: LlmBackend;
+  ollamaBaseUrl: string;
+  ollamaModel: string;
+  ollamaEmbeddingModel: string;
+  ollamaContextTokens: number | null;
   location: string;
   model: string;
   temperature: number;
@@ -47,6 +55,12 @@ export interface AiCredentials {
 }
 
 interface RawCredentialsFile extends Partial<ServiceAccountCredentials> {
+  llmBackend?: LlmBackend;
+  embeddingBackend?: LlmBackend;
+  ollamaBaseUrl?: string;
+  ollamaModel?: string;
+  ollamaEmbeddingModel?: string;
+  ollamaContextTokens?: number;
   location?: string;
   model?: string;
   temperature?: number;
@@ -88,6 +102,10 @@ export class CredentialsLoader {
   ] as const;
 
   private static readonly DEFAULTS = {
+    llmBackend: "vertex" as LlmBackend,
+    ollamaBaseUrl: "http://localhost:11434",
+    ollamaModel: "qwen2.5:14b",
+    ollamaEmbeddingModel: "bge-m3",
     location: "us-central1",
     model: "gemini-2.0-flash-001",
     temperature: 0.2,
@@ -133,10 +151,23 @@ export class CredentialsLoader {
     const raw = await this.readFileOrThrow(path);
     const parsed = this.parseJsonOrThrow(raw, path);
 
-    const serviceAccount = this.extractServiceAccount(parsed);
+    const llmBackend =
+      parsed.llmBackend ?? CredentialsLoader.DEFAULTS.llmBackend;
+    const embeddingBackend = parsed.embeddingBackend ?? llmBackend;
+    const needsVertex =
+      llmBackend === "vertex" || embeddingBackend === "vertex";
 
     return {
-      serviceAccount,
+      serviceAccount: needsVertex ? this.extractServiceAccount(parsed) : null,
+      llmBackend,
+      embeddingBackend,
+      ollamaBaseUrl:
+        parsed.ollamaBaseUrl ?? CredentialsLoader.DEFAULTS.ollamaBaseUrl,
+      ollamaModel: parsed.ollamaModel ?? CredentialsLoader.DEFAULTS.ollamaModel,
+      ollamaEmbeddingModel:
+        parsed.ollamaEmbeddingModel ??
+        CredentialsLoader.DEFAULTS.ollamaEmbeddingModel,
+      ollamaContextTokens: parsed.ollamaContextTokens ?? null,
       location: parsed.location ?? CredentialsLoader.DEFAULTS.location,
       model: parsed.model ?? CredentialsLoader.DEFAULTS.model,
       temperature: parsed.temperature ?? CredentialsLoader.DEFAULTS.temperature,
@@ -173,7 +204,8 @@ export class CredentialsLoader {
       olxRentalRegion:
         parsed.olxRentalRegion ?? CredentialsLoader.DEFAULTS.olxRentalRegion,
       rentalMaxListings:
-        parsed.rentalMaxListings ?? CredentialsLoader.DEFAULTS.rentalMaxListings,
+        parsed.rentalMaxListings ??
+        CredentialsLoader.DEFAULTS.rentalMaxListings,
       rentalQueryExpansionCount:
         parsed.rentalQueryExpansionCount ??
         CredentialsLoader.DEFAULTS.rentalQueryExpansionCount,
@@ -207,7 +239,6 @@ export class CredentialsLoader {
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code;
       if (code === "ENOENT") {
-        //
         throw new Error(
           `Missing ${CredentialsLoader.FILE_NAME}. Copy ${CredentialsLoader.EXAMPLE_FILE_NAME} to ${CredentialsLoader.FILE_NAME} and fill in your GCP service account JSON.`,
         );

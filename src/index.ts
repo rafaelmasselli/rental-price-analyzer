@@ -8,10 +8,7 @@ import {
   SearchAgent,
 } from "./core/agents/index.js";
 import { Pipeline } from "./core/pipeline/index.js";
-import {
-  GeminiProvider,
-  VertexEmbeddingsProvider,
-} from "./infra/llm/index.js";
+import { LlmFactory } from "./infra/llm/index.js";
 import { MercadoLivrePriceLookup } from "./infra/pricing/index.js";
 import { OlxScraper } from "./infra/sources/index.js";
 import { SqlitePriceHistoryStore } from "./infra/storage/index.js";
@@ -44,18 +41,9 @@ function parseInput(): CliInput {
 async function bootstrap(): Promise<void> {
   const credentials = await new CredentialsLoader().load();
 
-  const llmProvider = new GeminiProvider({
-    serviceAccount: credentials.serviceAccount,
-    location: credentials.location,
-    model: credentials.model,
-    temperature: credentials.temperature,
-  });
-
-  const embeddingsProvider = new VertexEmbeddingsProvider({
-    serviceAccount: credentials.serviceAccount,
-    location: credentials.location,
-    model: credentials.embeddingModel,
-  });
+  const factory = new LlmFactory(credentials);
+  const llmProvider = factory.createLlm();
+  const embeddingsProvider = factory.createEmbeddings();
 
   const listingSource = new OlxScraper({
     region: credentials.olxRegion,

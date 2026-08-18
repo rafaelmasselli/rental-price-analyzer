@@ -20,12 +20,6 @@ interface ScopeDefinition {
   requires: (key: BenchmarkKey) => boolean;
 }
 
-/**
- * Fair-rent estimator based on comparables. Walks from the narrowest scope
- * (same neighbourhood, same bedroom count, same property type) outward until it
- * finds enough observations, and reports which scope answered so the caller can
- * tell a solid median from a desperate one.
- */
 export class NeighborhoodBenchmark implements IRentBenchmarkLookup {
   private static readonly DEFAULT_MIN_SAMPLE = 5;
 
@@ -33,13 +27,6 @@ export class NeighborhoodBenchmark implements IRentBenchmarkLookup {
   private static readonly MIN_PER_M2 = 3;
   private static readonly MAX_PER_M2 = 400;
 
-  /**
-   * Half-width of the size band, as a fraction of the target area. R$/m2 is not
-   * flat across sizes — a 100m2 unit rents for noticeably less per square metre
-   * than a 40m2 one in the same building. Comparing a large flat against the
-   * whole neighbourhood makes it look like a steal, and a small one like a
-   * rip-off, so the narrow scopes only compare units of a similar size.
-   */
   static readonly AREA_BAND = 0.25;
 
   private static readonly SCOPES: ScopeDefinition[] = [

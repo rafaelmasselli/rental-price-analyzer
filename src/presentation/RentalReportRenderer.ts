@@ -6,7 +6,6 @@ import type {
   RentalTopPick,
 } from "../shared/models/index.js";
 
-/** Display bucket, not a domain concept: "suspeito" is a caveat, not a price band. */
 type Bucket = "good_deal" | "fair" | "overpriced" | "suspicious";
 
 const BUCKET_ICON: Record<Bucket, string> = {

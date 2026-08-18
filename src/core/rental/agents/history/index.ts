@@ -18,11 +18,6 @@ export interface RentalHistoryAgentOptions {
   dropThresholdPercent?: number;
 }
 
-/**
- * Tracks the monthly total over time. In rentals this is the highest-value
- * signal in the whole pipeline: a unit that has been re-advertised for weeks and
- * keeps dropping is a landlord who will negotiate.
- */
 export class RentalHistoryAgent implements IRentalAgent {
   private static readonly DEFAULT_SIMILAR_LIMIT = 5;
   private static readonly DEFAULT_MIN_SIMILARITY = 0.55;
@@ -89,20 +84,31 @@ export class RentalHistoryAgent implements IRentalAgent {
     if (newRecords.length === 0) return;
 
     console.log(
-      `[RentalHistoryAgent] Embedding ${newRecords.length} new listings via Vertex AI...`,
+      `[RentalHistoryAgent] Embedding ${newRecords.length} new listings via ${this.embeddings.describe().backend}/${this.embeddings.describe().model}...`,
     );
 
+    let vectors: number[][];
     try {
-      const vectors = await this.embeddings.embedDocuments(
+      vectors = await this.embeddings.embedDocuments(
         newRecords.map((listing) => this.toEmbeddingText(listing)),
       );
-      for (let i = 0; i < newRecords.length; i++) {
-        await this.store.upsertEmbedding(newRecords[i].listingId, vectors[i]);
-      }
     } catch (error) {
       console.log(
         `[RentalHistoryAgent] Embedding generation failed (proceeding without): ${(error as Error).message}`,
       );
+      return;
+    }
+
+    if (vectors.length === 0) return;
+
+    // Fora do catch acima: erro de config, não falha transitória.
+    this.store.assertEmbeddingCompatible(
+      this.embeddings.describe().model,
+      vectors[0].length,
+    );
+
+    for (let i = 0; i < newRecords.length; i++) {
+      await this.store.upsertEmbedding(newRecords[i].listingId, vectors[i]);
     }
   }
 

@@ -1,9 +1,7 @@
 import { ChatPromptTemplate } from "@langchain/core/prompts";
+import type { PromptStyle } from "../../../models/index.js";
 
-export const rentalExpansionPrompt = ChatPromptTemplate.fromMessages([
-  [
-    "system",
-    `## Role
+const SYSTEM_BASE = `## Role
 You are a search query optimizer for the Brazilian rental real-estate market (OLX Imóveis).
 
 ## Task
@@ -22,7 +20,19 @@ properties — never of a different location or a different kind of property.
 - Keep each variation short (2–6 words) — they are marketplace search terms, not sentences.
 
 ## Output
-Respond strictly in valid JSON matching the schema. No prose.`,
-  ],
-  ["human", "Original query: {query}"],
-]);
+Respond strictly in valid JSON matching the schema. No prose.`;
+
+const LITERAL_ADDENDUM = `
+
+## Mechanical rules — follow exactly
+- The first item of the array must be the original query, copied exactly.
+- The array holds exactly {count} strings. Not fewer, not more.
+- Every string must contain the same neighbourhood word the user typed.
+- Output only the JSON object. No explanation, no markdown fences.`;
+
+export function buildRentalExpansionPrompt(style: PromptStyle) {
+  return ChatPromptTemplate.fromMessages([
+    ["system", style === "literal" ? SYSTEM_BASE + LITERAL_ADDENDUM : SYSTEM_BASE],
+    ["human", "Original query: {query}"],
+  ]);
+}

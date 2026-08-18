@@ -19,11 +19,6 @@ export interface RentalPipelineAgents {
   analysis: IRentalAgent;
 }
 
-/**
- * Same shape as the marketplace pipeline, with two extra stages: the cheap
- * sanitization pass runs before the LLM sees anything, and refinement runs after
- * normalization, once listings finally have the attributes it needs to compare.
- */
 export class RentalPipeline {
   private static readonly state = Annotation.Root({
     query: Annotation<string>({

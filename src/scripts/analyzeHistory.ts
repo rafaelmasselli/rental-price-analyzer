@@ -1,9 +1,6 @@
 import { CredentialsLoader } from "../config/index.js";
 import { HistoricalAnalyzer } from "../core/services/index.js";
-import {
-  GeminiProvider,
-  VertexEmbeddingsProvider,
-} from "../infra/llm/index.js";
+import { LlmFactory } from "../infra/llm/index.js";
 import {
   HistoryQueryService,
   type HistoryQueryFilters,
@@ -106,20 +103,9 @@ async function main(): Promise<void> {
   const filters = parseArgs(process.argv.slice(2));
   const credentials = await new CredentialsLoader().load();
 
-  const llmProvider = new GeminiProvider({
-    serviceAccount: credentials.serviceAccount,
-    location: credentials.location,
-    model: credentials.model,
-    temperature: credentials.temperature,
-  });
-
-  const embeddings = filters.similarTo
-    ? new VertexEmbeddingsProvider({
-        serviceAccount: credentials.serviceAccount,
-        location: credentials.location,
-        model: credentials.embeddingModel,
-      })
-    : null;
+  const factory = new LlmFactory(credentials);
+  const llmProvider = factory.createLlm();
+  const embeddings = filters.similarTo ? factory.createEmbeddings() : null;
 
   const queryService = new HistoryQueryService(
     credentials.historyDbPath,

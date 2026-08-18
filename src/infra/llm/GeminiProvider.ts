@@ -1,6 +1,7 @@
 import { ChatVertexAI } from "@langchain/google-vertexai";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { ILLMProvider } from "../../core/ports/index.js";
+import { resolveModelProfile, type ModelProfile } from "../../core/models/index.js";
 import type { ServiceAccountCredentials } from "../../config/index.js";
 
 export interface GeminiProviderOptions {
@@ -12,8 +13,10 @@ export interface GeminiProviderOptions {
 
 export class GeminiProvider implements ILLMProvider {
   private readonly model: ChatVertexAI;
+  private readonly profile: ModelProfile;
 
   constructor(options: GeminiProviderOptions) {
+    this.profile = resolveModelProfile("vertex", options.model);
     this.model = new ChatVertexAI({
       model: options.model,
       location: options.location,
@@ -30,5 +33,9 @@ export class GeminiProvider implements ILLMProvider {
 
   getModel(): BaseChatModel {
     return this.model as unknown as BaseChatModel;
+  }
+
+  getProfile(): ModelProfile {
+    return this.profile;
   }
 }
