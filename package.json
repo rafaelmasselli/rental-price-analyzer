@@ -10,7 +10,8 @@
     "dev": "tsx src/index.ts",
     "query": "tsx src/scripts/queryHistory.ts",
     "analyze": "tsx src/scripts/analyzeHistory.ts",
-    "chat": "tsx src/scripts/chat.ts"
+    "chat": "tsx src/scripts/chat.ts",
+    "rent": "tsx src/rentals.ts"
   },
   "dependencies": {
     "@langchain/community": "^0.3.0",
@@ -26,9 +27,14 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/better-sqlite3": "^7.6.11",
     "@types/node": "^20.11.0",
+    "eslint": "^10.8.1",
+    "globals": "^17.11.0",
+    "jiti": "^2.7.0",
     "tsx": "^4.7.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "typescript-eslint": "^8.67.0"
   }
 }

@@ -4,3 +4,7 @@ export * from "./IEmbeddingProvider.js";
 export * from "./IListingSource.js";
 export * from "./ILLMProvider.js";
 export * from "./IPriceHistoryStore.js";
+export * from "./IRentalAgent.js";
+export * from "./IRentalHistoryStore.js";
+export * from "./IRentalListingSource.js";
+export * from "./IRentBenchmarkLookup.js";

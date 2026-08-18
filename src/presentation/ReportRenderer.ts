@@ -52,9 +52,7 @@ export class ReportRenderer {
       console.log(
         `  ${sim}% match · ${this.formatCurrency(match.lastPrice)}${rating} · ${match.title}`,
       );
-      console.log(
-        `    seen on "${match.query}" at ${match.lastSeenAt}`,
-      );
+      console.log(`    seen on "${match.query}" at ${match.lastSeenAt}`);
       console.log(`    ${match.url}`);
     }
   }
@@ -83,7 +81,11 @@ export class ReportRenderer {
     if (grouped.size === 0) return;
 
     console.log(`\n=== Market rating breakdown ===`);
-    for (const ratingClass of ["good_deal", "fair", "overpriced"] as RatingClass[]) {
+    for (const ratingClass of [
+      "good_deal",
+      "fair",
+      "overpriced",
+    ] as RatingClass[]) {
       const bucket = grouped.get(ratingClass);
       if (!bucket || bucket.length === 0) continue;
       console.log(
@@ -109,14 +111,17 @@ export class ReportRenderer {
     if (rating.components.length > 0) {
       const breakdown = rating.components
         .map(
-          (c) => `${c.category}:${c.spec}≈${this.formatCurrency(c.estimatedPriceBRL)}`,
+          (c) =>
+            `${c.category}:${c.spec}≈${this.formatCurrency(c.estimatedPriceBRL || 0)}`,
         )
         .join(" + ");
       const fair = this.formatCurrency(rating.estimatedFairTotalBRL);
       console.log(`    Parts: ${breakdown} = ${fair} fair`);
     }
     if (rating.missingStandardComponents.length > 0) {
-      console.log(`    Missing: ${rating.missingStandardComponents.join(", ")}`);
+      console.log(
+        `    Missing: ${rating.missingStandardComponents.join(", ")}`,
+      );
     }
     console.log(`    Why: ${rating.reasoning}`);
   }

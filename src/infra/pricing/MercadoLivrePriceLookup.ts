@@ -1,7 +1,7 @@
 import { chromium } from "playwright-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import type { Browser } from "playwright";
-import { load, type CheerioAPI } from "cheerio";
+import { load } from "cheerio";
 import type {
   ComponentPriceQuote,
   IComponentPriceLookup,
@@ -125,7 +125,9 @@ export class MercadoLivrePriceLookup implements IComponentPriceLookup {
       }
     }
 
-    console.log(`[ML] "${spec}" → exhausted ${urls.length} URL strategies, no reliable data`);
+    console.log(
+      `[ML] "${spec}" → exhausted ${urls.length} URL strategies, no reliable data`,
+    );
     return null;
   }
 
@@ -151,7 +153,10 @@ export class MercadoLivrePriceLookup implements IComponentPriceLookup {
       .replace(/^-|-$/g, "");
   }
 
-  private async fetchPage(browser: Browser, url: string): Promise<string | null> {
+  private async fetchPage(
+    browser: Browser,
+    url: string,
+  ): Promise<string | null> {
     const context = await browser.newContext({
       userAgent: MercadoLivrePriceLookup.USER_AGENT,
       locale: "pt-BR",
@@ -207,7 +212,9 @@ export class MercadoLivrePriceLookup implements IComponentPriceLookup {
       const card = $(element);
       const title = card.find(".ui-search-item__title, h2").first().text();
       if (!this.titleMatchesSpec(title, tokens)) return;
-      const price = this.parseCardPrice(card.find(".andes-money-amount__fraction").first().text());
+      const price = this.parseCardPrice(
+        card.find(".andes-money-amount__fraction").first().text(),
+      );
       if (price !== null) prices.push(price);
     });
 
@@ -216,7 +223,9 @@ export class MercadoLivrePriceLookup implements IComponentPriceLookup {
         const card = $(element);
         const title = card.find(".poly-component__title, h3").first().text();
         if (!this.titleMatchesSpec(title, tokens)) return;
-        const price = this.parseCardPrice(card.find(".andes-money-amount__fraction").first().text());
+        const price = this.parseCardPrice(
+          card.find(".andes-money-amount__fraction").first().text(),
+        );
         if (price !== null) prices.push(price);
       });
     }
@@ -281,8 +290,9 @@ export class MercadoLivrePriceLookup implements IComponentPriceLookup {
 
   private async randomSleep(): Promise<void> {
     const ms =
-      Math.floor(Math.random() * (this.delayRange.max - this.delayRange.min + 1)) +
-      this.delayRange.min;
+      Math.floor(
+        Math.random() * (this.delayRange.max - this.delayRange.min + 1),
+      ) + this.delayRange.min;
     await new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

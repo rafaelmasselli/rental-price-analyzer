@@ -33,6 +33,17 @@ export interface AiCredentials {
   excludedCategories: string[];
   outlierMultiplier: number;
   minPrice: number;
+  rentalDbPath: string;
+  olxRentalRegion: string;
+  rentalMaxListings: number;
+  rentalQueryExpansionCount: number;
+  rentalMinMonthlyTotal: number;
+  rentalMaxMonthlyTotal: number;
+  rentalExcludedKeywords: string[];
+  rentalOutlierMultiplier: number;
+  rentalThresholdPercent: number;
+  benchmarkMinSample: number;
+  benchmarkWindowDays: number;
 }
 
 interface RawCredentialsFile extends Partial<ServiceAccountCredentials> {
@@ -52,6 +63,17 @@ interface RawCredentialsFile extends Partial<ServiceAccountCredentials> {
   excludedCategories?: string[];
   outlierMultiplier?: number;
   minPrice?: number;
+  rentalDbPath?: string;
+  olxRentalRegion?: string;
+  rentalMaxListings?: number;
+  rentalQueryExpansionCount?: number;
+  rentalMinMonthlyTotal?: number;
+  rentalMaxMonthlyTotal?: number;
+  rentalExcludedKeywords?: string[];
+  rentalOutlierMultiplier?: number;
+  rentalThresholdPercent?: number;
+  benchmarkMinSample?: number;
+  benchmarkWindowDays?: number;
 }
 
 export class CredentialsLoader {
@@ -82,6 +104,26 @@ export class CredentialsLoader {
     excludedCategories: ["olx pay", "olx play"],
     outlierMultiplier: 3,
     minPrice: 50,
+    rentalDbPath: "data/rentals.sqlite",
+    olxRentalRegion: "estado-sp",
+    rentalMaxListings: 50,
+    rentalQueryExpansionCount: 3,
+    rentalMinMonthlyTotal: 300,
+    rentalMaxMonthlyTotal: 50000,
+    rentalExcludedKeywords: [
+      "temporada",
+      "diaria",
+      "diária",
+      "por dia",
+      "vende-se",
+      "vendo ",
+      "venda",
+      "vaga de garagem",
+    ],
+    rentalOutlierMultiplier: 2.5,
+    rentalThresholdPercent: 12,
+    benchmarkMinSample: 5,
+    benchmarkWindowDays: 45,
   };
 
   constructor(private readonly cwd: string = process.cwd()) {}
@@ -102,18 +144,20 @@ export class CredentialsLoader {
         parsed.historyDbPath ?? CredentialsLoader.DEFAULTS.historyDbPath,
       embeddingModel:
         parsed.embeddingModel ?? CredentialsLoader.DEFAULTS.embeddingModel,
-      cacheRoot:
-        parsed.cacheRoot ?? CredentialsLoader.DEFAULTS.cacheRoot,
+      cacheRoot: parsed.cacheRoot ?? CredentialsLoader.DEFAULTS.cacheRoot,
       maxListings: parsed.maxListings ?? CredentialsLoader.DEFAULTS.maxListings,
       olxRegion: parsed.olxRegion ?? CredentialsLoader.DEFAULTS.olxRegion,
       scraperDelayMinMs:
-        parsed.scraperDelayMinMs ?? CredentialsLoader.DEFAULTS.scraperDelayMinMs,
+        parsed.scraperDelayMinMs ??
+        CredentialsLoader.DEFAULTS.scraperDelayMinMs,
       scraperDelayMaxMs:
-        parsed.scraperDelayMaxMs ?? CredentialsLoader.DEFAULTS.scraperDelayMaxMs,
+        parsed.scraperDelayMaxMs ??
+        CredentialsLoader.DEFAULTS.scraperDelayMaxMs,
       scraperWarmup:
         parsed.scraperWarmup ?? CredentialsLoader.DEFAULTS.scraperWarmup,
       scraperMaxRetries:
-        parsed.scraperMaxRetries ?? CredentialsLoader.DEFAULTS.scraperMaxRetries,
+        parsed.scraperMaxRetries ??
+        CredentialsLoader.DEFAULTS.scraperMaxRetries,
       queryExpansionCount:
         parsed.queryExpansionCount ??
         CredentialsLoader.DEFAULTS.queryExpansionCount,
@@ -121,8 +165,39 @@ export class CredentialsLoader {
         parsed.excludedCategories ??
         CredentialsLoader.DEFAULTS.excludedCategories,
       outlierMultiplier:
-        parsed.outlierMultiplier ?? CredentialsLoader.DEFAULTS.outlierMultiplier,
+        parsed.outlierMultiplier ??
+        CredentialsLoader.DEFAULTS.outlierMultiplier,
       minPrice: parsed.minPrice ?? CredentialsLoader.DEFAULTS.minPrice,
+      rentalDbPath:
+        parsed.rentalDbPath ?? CredentialsLoader.DEFAULTS.rentalDbPath,
+      olxRentalRegion:
+        parsed.olxRentalRegion ?? CredentialsLoader.DEFAULTS.olxRentalRegion,
+      rentalMaxListings:
+        parsed.rentalMaxListings ?? CredentialsLoader.DEFAULTS.rentalMaxListings,
+      rentalQueryExpansionCount:
+        parsed.rentalQueryExpansionCount ??
+        CredentialsLoader.DEFAULTS.rentalQueryExpansionCount,
+      rentalMinMonthlyTotal:
+        parsed.rentalMinMonthlyTotal ??
+        CredentialsLoader.DEFAULTS.rentalMinMonthlyTotal,
+      rentalMaxMonthlyTotal:
+        parsed.rentalMaxMonthlyTotal ??
+        CredentialsLoader.DEFAULTS.rentalMaxMonthlyTotal,
+      rentalExcludedKeywords:
+        parsed.rentalExcludedKeywords ??
+        CredentialsLoader.DEFAULTS.rentalExcludedKeywords,
+      rentalOutlierMultiplier:
+        parsed.rentalOutlierMultiplier ??
+        CredentialsLoader.DEFAULTS.rentalOutlierMultiplier,
+      rentalThresholdPercent:
+        parsed.rentalThresholdPercent ??
+        CredentialsLoader.DEFAULTS.rentalThresholdPercent,
+      benchmarkMinSample:
+        parsed.benchmarkMinSample ??
+        CredentialsLoader.DEFAULTS.benchmarkMinSample,
+      benchmarkWindowDays:
+        parsed.benchmarkWindowDays ??
+        CredentialsLoader.DEFAULTS.benchmarkWindowDays,
     };
   }
 
@@ -132,6 +207,7 @@ export class CredentialsLoader {
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code;
       if (code === "ENOENT") {
+        //
         throw new Error(
           `Missing ${CredentialsLoader.FILE_NAME}. Copy ${CredentialsLoader.EXAMPLE_FILE_NAME} to ${CredentialsLoader.FILE_NAME} and fill in your GCP service account JSON.`,
         );
@@ -144,9 +220,7 @@ export class CredentialsLoader {
     try {
       return JSON.parse(raw) as RawCredentialsFile;
     } catch (error) {
-      throw new Error(
-        `Invalid JSON in ${path}: ${(error as Error).message}`,
-      );
+      throw new Error(`Invalid JSON in ${path}: ${(error as Error).message}`);
     }
   }
 
